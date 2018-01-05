@@ -176,8 +176,14 @@ view model =
               else
                 div [] []
             , div []
-                [ input [ class "form-control", type_ "text", placeholder "Name", onInput SearchCity
-        , value model.searchTerm ] []
+                [ input
+                    [ class "form-control"
+                    , type_ "text"
+                    , placeholder "Name"
+                    , onInput SearchCity
+                    , value model.searchTerm
+                    ]
+                    []
                 ]
             , div [ class "list-group" ] (List.map (\city -> button [ type_ "button", class "list-group-item", onClick (SelectCity city) ] [ Html.text city ]) model.cities)
             , googleMap
@@ -189,12 +195,16 @@ view model =
                 , property "latitude" (Encode.float location.latitude)
                 , property "longitude" (Encode.float location.longitude)
                 ]
-                [ googleMapMarker
-                    [ property "latitude" (Encode.float location.latitude)
-                    , property "longitude" (Encode.float location.longitude)
+                (if location.latitude /= 0.0 && location.longitude /= 0.0 then
+                    [ googleMapMarker
+                        [ property "latitude" (Encode.float location.latitude)
+                        , property "longitude" (Encode.float location.longitude)
+                        ]
+                        []
                     ]
+                 else
                     []
-                ]
+                )
             ]
 
 

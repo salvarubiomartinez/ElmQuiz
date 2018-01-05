@@ -9335,7 +9335,7 @@ var _elm_lang$elm_architecture_tutorial$Main$view = function (model) {
 									}
 								}
 							},
-							{
+							((!_elm_lang$core$Native_Utils.eq(location.latitude, 0.0)) && (!_elm_lang$core$Native_Utils.eq(location.longitude, 0.0))) ? {
 								ctor: '::',
 								_0: A2(
 									_elm_lang$elm_architecture_tutorial$Main$googleMapMarker,
@@ -9356,7 +9356,7 @@ var _elm_lang$elm_architecture_tutorial$Main$view = function (model) {
 									},
 									{ctor: '[]'}),
 								_1: {ctor: '[]'}
-							}),
+							} : {ctor: '[]'}),
 						_1: {ctor: '[]'}
 					}
 				}

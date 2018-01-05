@@ -24,9 +24,10 @@ main =
 
 type alias Model =
     { searchTerm : String
-    , selectedCity : CityLocation
+    , selectedCity : Maybe CityLocation
     , cities : List String
     , error : Maybe String
+    , coordenates : Maybe Coordenates
     }
 
 
@@ -46,7 +47,7 @@ type alias JsonResponse =
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model "" (CityLocation "0.0" "0.0") [] Maybe.Nothing, Cmd.none )
+    ( Model "" Maybe.Nothing [] Maybe.Nothing Maybe.Nothing, Cmd.none )
 
 
 urlSearchCities : String
@@ -75,24 +76,60 @@ update msg model =
     case msg of
         SearchCity searchTerm ->
             if (String.length searchTerm) >= 3 then
-                ( { model | searchTerm = searchTerm }, searchCity searchTerm )
+                ( { model
+                    | searchTerm = searchTerm
+                  }
+                , searchCity searchTerm
+                )
             else
-                ( { model | searchTerm = searchTerm, cities = [] }, Cmd.none )
+                ( { model
+                    | searchTerm = searchTerm
+                    , cities = []
+                  }
+                , Cmd.none
+                )
 
         GetCities (Ok cities) ->
-            ( { model | cities = cities, error = Maybe.Nothing }, Cmd.none )
+            ( { model
+                | cities = cities
+                , error = Maybe.Nothing
+              }
+            , Cmd.none
+            )
 
         GetCities (Err error) ->
-            ( { model | cities = [], error = Just "could not get the cities", selectedCity = CityLocation "0.0" "0.0" }, Cmd.none )
+            ( { model
+                | cities = []
+                , error = Just "could not get the cities"
+                , selectedCity = Maybe.Nothing
+                , coordenates = Maybe.Nothing
+              }
+            , Cmd.none
+            )
 
         SelectCity city ->
-            ( { model | searchTerm = city, cities = [] }, getCoordenates city )
+            ( { model
+                | searchTerm = city
+                , cities = []
+              }
+            , getCoordenates city
+            )
 
         GetCoordenates (Ok city) ->
-            ( { model | selectedCity = city, error = Maybe.Nothing }, Cmd.none )
+            ( { model
+                | selectedCity = Just city
+                , coordenates = Just (parseLocation city)
+                , error = Maybe.Nothing
+              }
+            , Cmd.none
+            )
 
         GetCoordenates (Err error) ->
-            ( { model | error = Just "Error retriving coordenates" }, Cmd.none )
+            ( { model
+                | error = Just "Error retrieving coordenates"
+              }
+            , Cmd.none
+            )
 
 
 searchCity : String -> Cmd Msg
@@ -127,6 +164,28 @@ type alias Coordenates =
     }
 
 
+parseLocation : CityLocation -> Coordenates
+parseLocation city =
+    let
+        latitude =
+            case (String.toFloat city.geobyteslatitude) of
+                Ok lat ->
+                    lat
+
+                Err error ->
+                    0.0
+
+        longitude =
+            case (String.toFloat city.geobyteslongitude) of
+                Ok lat ->
+                    lat
+
+                Err error ->
+                    0.0
+    in
+        Coordenates latitude longitude
+
+
 
 -- VIEW
 
@@ -134,26 +193,6 @@ type alias Coordenates =
 view : Model -> Html Msg
 view model =
     let
-        location =
-            let
-                latitude =
-                    case (String.toFloat model.selectedCity.geobyteslatitude) of
-                        Ok lat ->
-                            lat
-
-                        Err error ->
-                            0.0
-
-                longitude =
-                    case (String.toFloat model.selectedCity.geobyteslongitude) of
-                        Ok lat ->
-                            lat
-
-                        Err error ->
-                            0.0
-            in
-                Coordenates latitude longitude
-
         showError =
             case model.error of
                 Nothing ->
@@ -185,26 +224,39 @@ view model =
                     ]
                     []
                 ]
-            , div [ class "list-group" ] (List.map (\city -> button [ type_ "button", class "list-group-item", onClick (SelectCity city) ] [ Html.text city ]) model.cities)
-            , googleMap
-                [ style
-                    [ ( "height", "600px" )
-                    , ( "width", "100%" )
-                    ]
-                , attribute "api-key" "AIzaSyDGP0nmkgVQ9x8f5YxHHG2ssmPPumtl6H4"
-                , property "latitude" (Encode.float location.latitude)
-                , property "longitude" (Encode.float location.longitude)
-                ]
-                (if location.latitude /= 0.0 && location.longitude /= 0.0 then
-                    [ googleMapMarker
-                        [ property "latitude" (Encode.float location.latitude)
-                        , property "longitude" (Encode.float location.longitude)
-                        ]
-                        []
-                    ]
-                 else
-                    []
+            , div [ class "list-group" ]
+                (List.map
+                    (\city ->
+                        button
+                            [ type_ "button"
+                            , class "list-group-item"
+                            , onClick (SelectCity city)
+                            ]
+                            [ Html.text city ]
+                    )
+                    model.cities
                 )
+            , (case model.coordenates of
+                Nothing ->
+                    div [] []
+
+                Just coordenates ->
+                    googleMap
+                        [ style
+                            [ ( "height", "600px" )
+                            , ( "width", "100%" )
+                            ]
+                        , attribute "api-key" "AIzaSyDGP0nmkgVQ9x8f5YxHHG2ssmPPumtl6H4"
+                        , property "latitude" (Encode.float coordenates.latitude)
+                        , property "longitude" (Encode.float coordenates.longitude)
+                        ]
+                        [ googleMapMarker
+                            [ property "latitude" (Encode.float coordenates.latitude)
+                            , property "longitude" (Encode.float coordenates.longitude)
+                            ]
+                            []
+                        ]
+              )
             ]
 
 

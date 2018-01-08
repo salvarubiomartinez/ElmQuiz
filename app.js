@@ -9035,66 +9035,88 @@ var _elm_lang$http$Http$stringPart = _elm_lang$http$Http$StringPart;
 
 var _elm_lang$elm_architecture_tutorial$Main$googleMapMarker = _elm_lang$html$Html$node('google-map-marker');
 var _elm_lang$elm_architecture_tutorial$Main$googleMap = _elm_lang$html$Html$node('google-map');
-var _elm_lang$elm_architecture_tutorial$Main$decodeResponse = _elm_lang$core$Json_Decode$list(_elm_lang$core$Json_Decode$string);
-var _elm_lang$elm_architecture_tutorial$Main$urlCityDetails = 'https://salvadorrubiomartinez.nowapps.org/GetCityDetails.php?q=';
-var _elm_lang$elm_architecture_tutorial$Main$urlSearchCities = 'https://salvadorrubiomartinez.nowapps.org/AutoCompleteCity.php?q=';
-var _elm_lang$elm_architecture_tutorial$Main$Model = F5(
-	function (a, b, c, d, e) {
-		return {searchTerm: a, selectedCity: b, cities: c, error: d, coordenates: e};
+var _elm_lang$elm_architecture_tutorial$Main$googleApiKey = 'AIzaSyDGP0nmkgVQ9x8f5YxHHG2ssmPPumtl6H4';
+var _elm_lang$elm_architecture_tutorial$Main$urlCityDetails = A2(
+	_elm_lang$core$Basics_ops['++'],
+	'https://maps.googleapis.com/maps/api/place/details/json?key=',
+	A2(_elm_lang$core$Basics_ops['++'], _elm_lang$elm_architecture_tutorial$Main$googleApiKey, '&place_id='));
+var _elm_lang$elm_architecture_tutorial$Main$urlSearchCities = A2(
+	_elm_lang$core$Basics_ops['++'],
+	'https://maps.googleapis.com/maps/api/place/autocomplete/json?key=',
+	A2(_elm_lang$core$Basics_ops['++'], _elm_lang$elm_architecture_tutorial$Main$googleApiKey, '&input='));
+var _elm_lang$elm_architecture_tutorial$Main$Model = F4(
+	function (a, b, c, d) {
+		return {searchTerm: a, cities: b, error: c, coordenates: d};
 	});
 var _elm_lang$elm_architecture_tutorial$Main$init = {
 	ctor: '_Tuple2',
-	_0: A5(
+	_0: A4(
 		_elm_lang$elm_architecture_tutorial$Main$Model,
 		'',
-		_elm_lang$core$Maybe$Nothing,
 		{ctor: '[]'},
 		_elm_lang$core$Maybe$Nothing,
 		_elm_lang$core$Maybe$Nothing),
 	_1: _elm_lang$core$Platform_Cmd$none
 };
-var _elm_lang$elm_architecture_tutorial$Main$CityLocation = F2(
-	function (a, b) {
-		return {geobyteslatitude: a, geobyteslongitude: b};
-	});
-var _elm_lang$elm_architecture_tutorial$Main$decodeCityLocation = A3(
-	_elm_lang$core$Json_Decode$map2,
-	_elm_lang$elm_architecture_tutorial$Main$CityLocation,
-	A2(_elm_lang$core$Json_Decode$field, 'geobyteslatitude', _elm_lang$core$Json_Decode$string),
-	A2(_elm_lang$core$Json_Decode$field, 'geobyteslongitude', _elm_lang$core$Json_Decode$string));
-var _elm_lang$elm_architecture_tutorial$Main$Coordenates = F2(
-	function (a, b) {
-		return {latitude: a, longitude: b};
-	});
-var _elm_lang$elm_architecture_tutorial$Main$parseLocation = function (city) {
-	var longitude = function () {
-		var _p0 = _elm_lang$core$String$toFloat(city.geobyteslongitude);
-		if (_p0.ctor === 'Ok') {
-			return _p0._0;
-		} else {
-			return 0.0;
-		}
-	}();
-	var latitude = function () {
-		var _p1 = _elm_lang$core$String$toFloat(city.geobyteslatitude);
-		if (_p1.ctor === 'Ok') {
-			return _p1._0;
-		} else {
-			return 0.0;
-		}
-	}();
-	return A2(_elm_lang$elm_architecture_tutorial$Main$Coordenates, latitude, longitude);
+var _elm_lang$elm_architecture_tutorial$Main$CityDetailsResponse = function (a) {
+	return {result: a};
 };
+var _elm_lang$elm_architecture_tutorial$Main$CityDetailsResult = function (a) {
+	return {geometry: a};
+};
+var _elm_lang$elm_architecture_tutorial$Main$Geometry = function (a) {
+	return {location: a};
+};
+var _elm_lang$elm_architecture_tutorial$Main$Location = F2(
+	function (a, b) {
+		return {lat: a, lng: b};
+	});
+var _elm_lang$elm_architecture_tutorial$Main$decodeLocation = A3(
+	_elm_lang$core$Json_Decode$map2,
+	_elm_lang$elm_architecture_tutorial$Main$Location,
+	A2(_elm_lang$core$Json_Decode$field, 'lat', _elm_lang$core$Json_Decode$float),
+	A2(_elm_lang$core$Json_Decode$field, 'lng', _elm_lang$core$Json_Decode$float));
+var _elm_lang$elm_architecture_tutorial$Main$decodeGeometry = A2(
+	_elm_lang$core$Json_Decode$map,
+	_elm_lang$elm_architecture_tutorial$Main$Geometry,
+	A2(_elm_lang$core$Json_Decode$field, 'location', _elm_lang$elm_architecture_tutorial$Main$decodeLocation));
+var _elm_lang$elm_architecture_tutorial$Main$decodeCityDetailsResult = A2(
+	_elm_lang$core$Json_Decode$map,
+	_elm_lang$elm_architecture_tutorial$Main$CityDetailsResult,
+	A2(_elm_lang$core$Json_Decode$field, 'geometry', _elm_lang$elm_architecture_tutorial$Main$decodeGeometry));
+var _elm_lang$elm_architecture_tutorial$Main$decodeCityLocation = A2(
+	_elm_lang$core$Json_Decode$map,
+	_elm_lang$elm_architecture_tutorial$Main$CityDetailsResponse,
+	A2(_elm_lang$core$Json_Decode$field, 'result', _elm_lang$elm_architecture_tutorial$Main$decodeCityDetailsResult));
+var _elm_lang$elm_architecture_tutorial$Main$PredictionResponse = function (a) {
+	return {predictions: a};
+};
+var _elm_lang$elm_architecture_tutorial$Main$Prediction = F2(
+	function (a, b) {
+		return {description: a, place_id: b};
+	});
+var _elm_lang$elm_architecture_tutorial$Main$decodePrediction = A3(
+	_elm_lang$core$Json_Decode$map2,
+	_elm_lang$elm_architecture_tutorial$Main$Prediction,
+	A2(_elm_lang$core$Json_Decode$field, 'description', _elm_lang$core$Json_Decode$string),
+	A2(_elm_lang$core$Json_Decode$field, 'place_id', _elm_lang$core$Json_Decode$string));
+var _elm_lang$elm_architecture_tutorial$Main$decodeResponse = A2(
+	_elm_lang$core$Json_Decode$map,
+	_elm_lang$elm_architecture_tutorial$Main$PredictionResponse,
+	A2(
+		_elm_lang$core$Json_Decode$field,
+		'predictions',
+		_elm_lang$core$Json_Decode$list(_elm_lang$elm_architecture_tutorial$Main$decodePrediction)));
 var _elm_lang$elm_architecture_tutorial$Main$GetCoordenates = function (a) {
 	return {ctor: 'GetCoordenates', _0: a};
 };
-var _elm_lang$elm_architecture_tutorial$Main$getCoordenates = function (city) {
+var _elm_lang$elm_architecture_tutorial$Main$getCoordenates = function (cityId) {
 	return A2(
 		_elm_lang$http$Http$send,
 		_elm_lang$elm_architecture_tutorial$Main$GetCoordenates,
 		A2(
 			_elm_lang$http$Http$get,
-			A2(_elm_lang$core$Basics_ops['++'], _elm_lang$elm_architecture_tutorial$Main$urlCityDetails, city),
+			A2(_elm_lang$core$Basics_ops['++'], _elm_lang$elm_architecture_tutorial$Main$urlCityDetails, cityId),
 			_elm_lang$elm_architecture_tutorial$Main$decodeCityLocation));
 };
 var _elm_lang$elm_architecture_tutorial$Main$SelectCity = function (a) {
@@ -9114,35 +9136,35 @@ var _elm_lang$elm_architecture_tutorial$Main$searchCity = function (searchTerm) 
 };
 var _elm_lang$elm_architecture_tutorial$Main$update = F2(
 	function (msg, model) {
-		var _p2 = msg;
-		switch (_p2.ctor) {
+		var _p0 = msg;
+		switch (_p0.ctor) {
 			case 'SearchCity':
-				var _p3 = _p2._0;
+				var _p1 = _p0._0;
 				return (_elm_lang$core$Native_Utils.cmp(
-					_elm_lang$core$String$length(_p3),
-					3) > -1) ? {
+					_elm_lang$core$String$length(_p1),
+					2) > -1) ? {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{searchTerm: _p3}),
-					_1: _elm_lang$elm_architecture_tutorial$Main$searchCity(_p3)
+						{searchTerm: _p1}),
+					_1: _elm_lang$elm_architecture_tutorial$Main$searchCity(_p1)
 				} : {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							searchTerm: _p3,
+							searchTerm: _p1,
 							cities: {ctor: '[]'}
 						}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'GetCities':
-				if (_p2._0.ctor === 'Ok') {
+				if (_p0._0.ctor === 'Ok') {
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
-							{cities: _p2._0._0, error: _elm_lang$core$Maybe$Nothing}),
+							{cities: _p0._0._0.predictions, error: _elm_lang$core$Maybe$Nothing}),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
@@ -9153,35 +9175,31 @@ var _elm_lang$elm_architecture_tutorial$Main$update = F2(
 							{
 								cities: {ctor: '[]'},
 								error: _elm_lang$core$Maybe$Just('could not get the cities'),
-								selectedCity: _elm_lang$core$Maybe$Nothing,
 								coordenates: _elm_lang$core$Maybe$Nothing
 							}),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				}
 			case 'SelectCity':
-				var _p4 = _p2._0;
+				var _p2 = _p0._0;
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
 						{
-							searchTerm: _p4,
+							searchTerm: _p2.description,
 							cities: {ctor: '[]'}
 						}),
-					_1: _elm_lang$elm_architecture_tutorial$Main$getCoordenates(_p4)
+					_1: _elm_lang$elm_architecture_tutorial$Main$getCoordenates(_p2.place_id)
 				};
 			default:
-				if (_p2._0.ctor === 'Ok') {
-					var _p5 = _p2._0._0;
+				if (_p0._0.ctor === 'Ok') {
 					return {
 						ctor: '_Tuple2',
 						_0: _elm_lang$core$Native_Utils.update(
 							model,
 							{
-								selectedCity: _elm_lang$core$Maybe$Just(_p5),
-								coordenates: _elm_lang$core$Maybe$Just(
-									_elm_lang$elm_architecture_tutorial$Main$parseLocation(_p5)),
+								coordenates: _elm_lang$core$Maybe$Just(_p0._0._0.result.geometry.location),
 								error: _elm_lang$core$Maybe$Nothing
 							}),
 						_1: _elm_lang$core$Platform_Cmd$none
@@ -9204,16 +9222,16 @@ var _elm_lang$elm_architecture_tutorial$Main$SearchCity = function (a) {
 };
 var _elm_lang$elm_architecture_tutorial$Main$view = function (model) {
 	var error = function () {
-		var _p6 = model.error;
-		if (_p6.ctor === 'Nothing') {
+		var _p3 = model.error;
+		if (_p3.ctor === 'Nothing') {
 			return '';
 		} else {
-			return _p6._0;
+			return _p3._0;
 		}
 	}();
 	var showError = function () {
-		var _p7 = model.error;
-		if (_p7.ctor === 'Nothing') {
+		var _p4 = model.error;
+		if (_p4.ctor === 'Nothing') {
 			return false;
 		} else {
 			return true;
@@ -9302,7 +9320,7 @@ var _elm_lang$elm_architecture_tutorial$Main$view = function (model) {
 									},
 									{
 										ctor: '::',
-										_0: _elm_lang$html$Html$text(city),
+										_0: _elm_lang$html$Html$text(city.description),
 										_1: {ctor: '[]'}
 									});
 							},
@@ -9310,14 +9328,14 @@ var _elm_lang$elm_architecture_tutorial$Main$view = function (model) {
 					_1: {
 						ctor: '::',
 						_0: function () {
-							var _p8 = model.coordenates;
-							if (_p8.ctor === 'Nothing') {
+							var _p5 = model.coordenates;
+							if (_p5.ctor === 'Nothing') {
 								return A2(
 									_elm_lang$html$Html$div,
 									{ctor: '[]'},
 									{ctor: '[]'});
 							} else {
-								var _p9 = _p8._0;
+								var _p6 = _p5._0;
 								return A2(
 									_elm_lang$elm_architecture_tutorial$Main$googleMap,
 									{
@@ -9340,13 +9358,13 @@ var _elm_lang$elm_architecture_tutorial$Main$view = function (model) {
 												_0: A2(
 													_elm_lang$html$Html_Attributes$property,
 													'latitude',
-													_elm_lang$core$Json_Encode$float(_p9.latitude)),
+													_elm_lang$core$Json_Encode$float(_p6.lat)),
 												_1: {
 													ctor: '::',
 													_0: A2(
 														_elm_lang$html$Html_Attributes$property,
 														'longitude',
-														_elm_lang$core$Json_Encode$float(_p9.longitude)),
+														_elm_lang$core$Json_Encode$float(_p6.lng)),
 													_1: {ctor: '[]'}
 												}
 											}
@@ -9361,13 +9379,13 @@ var _elm_lang$elm_architecture_tutorial$Main$view = function (model) {
 												_0: A2(
 													_elm_lang$html$Html_Attributes$property,
 													'latitude',
-													_elm_lang$core$Json_Encode$float(_p9.latitude)),
+													_elm_lang$core$Json_Encode$float(_p6.lat)),
 												_1: {
 													ctor: '::',
 													_0: A2(
 														_elm_lang$html$Html_Attributes$property,
 														'longitude',
-														_elm_lang$core$Json_Encode$float(_p9.longitude)),
+														_elm_lang$core$Json_Encode$float(_p6.lng)),
 													_1: {ctor: '[]'}
 												}
 											},
@@ -9387,7 +9405,7 @@ var _elm_lang$elm_architecture_tutorial$Main$main = _elm_lang$html$Html$program(
 		init: _elm_lang$elm_architecture_tutorial$Main$init,
 		view: _elm_lang$elm_architecture_tutorial$Main$view,
 		update: _elm_lang$elm_architecture_tutorial$Main$update,
-		subscriptions: function (_p10) {
+		subscriptions: function (_p7) {
 			return _elm_lang$core$Platform_Sub$none;
 		}
 	})();

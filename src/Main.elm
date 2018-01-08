@@ -24,21 +24,42 @@ main =
 
 type alias Model =
     { searchTerm : String
-    , selectedCity : Maybe CityLocation
-    , cities : List String
+    , cities : List Prediction
     , error : Maybe String
-    , coordenates : Maybe Coordenates
+    , coordenates : Maybe Location
     }
 
 
-type alias CityLocation =
-    { geobyteslatitude : String
-    , geobyteslongitude : String
+type alias CityDetailsResponse =
+    { result : CityDetailsResult
     }
 
 
-type alias JsonResponse =
-    List String
+type alias CityDetailsResult =
+    { geometry : Geometry
+    }
+
+
+type alias Geometry =
+    { location : Location
+    }
+
+
+type alias Location =
+    { lat : Float
+    , lng : Float
+    }
+
+
+type alias PredictionResponse =
+    { predictions : List Prediction
+    }
+
+
+type alias Prediction =
+    { description : String
+    , place_id : String
+    }
 
 
 
@@ -47,17 +68,22 @@ type alias JsonResponse =
 
 init : ( Model, Cmd Msg )
 init =
-    ( Model "" Maybe.Nothing [] Maybe.Nothing Maybe.Nothing, Cmd.none )
+    ( Model "" [] Maybe.Nothing Maybe.Nothing, Cmd.none )
 
 
 urlSearchCities : String
 urlSearchCities =
-    "https://salvadorrubiomartinez.nowapps.org/AutoCompleteCity.php?q="
+    "https://maps.googleapis.com/maps/api/place/autocomplete/json?key=" ++ googleApiKey ++ "&input="
 
 
 urlCityDetails : String
 urlCityDetails =
-    "https://salvadorrubiomartinez.nowapps.org/GetCityDetails.php?q="
+    "https://maps.googleapis.com/maps/api/place/details/json?key=" ++ googleApiKey ++ "&place_id="
+
+
+googleApiKey : String
+googleApiKey =
+    "AIzaSyDGP0nmkgVQ9x8f5YxHHG2ssmPPumtl6H4"
 
 
 
@@ -66,16 +92,16 @@ urlCityDetails =
 
 type Msg
     = SearchCity String
-    | GetCities (Result Http.Error JsonResponse)
-    | SelectCity String
-    | GetCoordenates (Result Http.Error CityLocation)
+    | GetCities (Result Http.Error PredictionResponse)
+    | SelectCity Prediction
+    | GetCoordenates (Result Http.Error CityDetailsResponse)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SearchCity searchTerm ->
-            if (String.length searchTerm) >= 3 then
+            if (String.length searchTerm) >= 2 then
                 ( { model
                     | searchTerm = searchTerm
                   }
@@ -91,7 +117,7 @@ update msg model =
 
         GetCities (Ok cities) ->
             ( { model
-                | cities = cities
+                | cities = cities.predictions
                 , error = Maybe.Nothing
               }
             , Cmd.none
@@ -101,7 +127,6 @@ update msg model =
             ( { model
                 | cities = []
                 , error = Just "could not get the cities"
-                , selectedCity = Maybe.Nothing
                 , coordenates = Maybe.Nothing
               }
             , Cmd.none
@@ -109,16 +134,15 @@ update msg model =
 
         SelectCity city ->
             ( { model
-                | searchTerm = city
+                | searchTerm = city.description
                 , cities = []
               }
-            , getCoordenates city
+            , getCoordenates city.place_id
             )
 
-        GetCoordenates (Ok city) ->
+        GetCoordenates (Ok response) ->
             ( { model
-                | selectedCity = Just city
-                , coordenates = Just (parseLocation city)
+                | coordenates = Just response.result.geometry.location
                 , error = Maybe.Nothing
               }
             , Cmd.none
@@ -139,51 +163,49 @@ searchCity searchTerm =
             decodeResponse
 
 
+decodeResponse : Decode.Decoder PredictionResponse
+decodeResponse =
+    Decode.map PredictionResponse
+        (Decode.field "predictions" (Decode.list decodePrediction))
+
+
+decodePrediction : Decode.Decoder Prediction
+decodePrediction =
+    Decode.map2 Prediction
+        (Decode.field "description" Decode.string)
+        (Decode.field "place_id" Decode.string)
+
+
 getCoordenates : String -> Cmd Msg
-getCoordenates city =
+getCoordenates cityId =
     Http.send GetCoordenates <|
-        Http.get (urlCityDetails ++ city) <|
+        Http.get (urlCityDetails ++ cityId) <|
             decodeCityLocation
 
 
-decodeCityLocation : Decode.Decoder CityLocation
+decodeCityLocation : Decode.Decoder CityDetailsResponse
 decodeCityLocation =
-    Decode.map2 CityLocation
-        (Decode.field "geobyteslatitude" Decode.string)
-        (Decode.field "geobyteslongitude" Decode.string)
+    Decode.map CityDetailsResponse
+        (Decode.field "result" decodeCityDetailsResult)
 
 
-decodeResponse : Decode.Decoder JsonResponse
-decodeResponse =
-    Decode.list Decode.string
+decodeCityDetailsResult : Decode.Decoder CityDetailsResult
+decodeCityDetailsResult =
+    Decode.map CityDetailsResult
+        (Decode.field "geometry" decodeGeometry)
 
 
-type alias Coordenates =
-    { latitude : Float
-    , longitude : Float
-    }
+decodeGeometry : Decode.Decoder Geometry
+decodeGeometry =
+    Decode.map Geometry
+        (Decode.field "location" decodeLocation)
 
 
-parseLocation : CityLocation -> Coordenates
-parseLocation city =
-    let
-        latitude =
-            case (String.toFloat city.geobyteslatitude) of
-                Ok lat ->
-                    lat
-
-                Err error ->
-                    0.0
-
-        longitude =
-            case (String.toFloat city.geobyteslongitude) of
-                Ok lat ->
-                    lat
-
-                Err error ->
-                    0.0
-    in
-        Coordenates latitude longitude
+decodeLocation : Decode.Decoder Location
+decodeLocation =
+    Decode.map2 Location
+        (Decode.field "lat" Decode.float)
+        (Decode.field "lng" Decode.float)
 
 
 
@@ -232,7 +254,7 @@ view model =
                             , class "list-group-item"
                             , onClick (SelectCity city)
                             ]
-                            [ Html.text city ]
+                            [ Html.text city.description ]
                     )
                     model.cities
                 )
@@ -247,12 +269,12 @@ view model =
                             , ( "width", "100%" )
                             ]
                         , attribute "api-key" "AIzaSyDGP0nmkgVQ9x8f5YxHHG2ssmPPumtl6H4"
-                        , property "latitude" (Encode.float coordenates.latitude)
-                        , property "longitude" (Encode.float coordenates.longitude)
+                        , property "latitude" (Encode.float coordenates.lat)
+                        , property "longitude" (Encode.float coordenates.lng)
                         ]
                         [ googleMapMarker
-                            [ property "latitude" (Encode.float coordenates.latitude)
-                            , property "longitude" (Encode.float coordenates.longitude)
+                            [ property "latitude" (Encode.float coordenates.lat)
+                            , property "longitude" (Encode.float coordenates.lng)
                             ]
                             []
                         ]
